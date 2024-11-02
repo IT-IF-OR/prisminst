@@ -71,7 +71,7 @@ if not exist "%PrismExePath%" (
 
     :: Установка Prism Launcher
     echo Установка Prism Launcher...
-    start /wait /min PrismLauncher-Windows-MSVC-Setup-9.1.exe /SILENT /DIR="%LocalAppData%\Programs\PrismLauncher"
+    start /wait PrismLauncher-Windows-MSVC-Setup-9.1.exe /SILENT /DIR="%LocalAppData%\Programs\PrismLauncher"
     if %errorlevel% neq 0 (
         echo Ошибка при установке Prism Launcher. Код ошибки: %errorlevel%
         pause
