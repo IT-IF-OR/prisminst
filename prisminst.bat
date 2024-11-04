@@ -6,7 +6,7 @@ chcp 65001 > nul
 :: Запрос имени пользователя
 set /p username="Введите ваше имя пользователя: "
 
-:: Установка путей
+:: Установка фиксированного пути для установки Prism Launcher
 set "PrismPath=%AppData%\PrismLauncher"
 set "PrismExePath=%LocalAppData%\Programs\PrismLauncher\prismlauncher.exe"
 
@@ -22,37 +22,42 @@ if %errorlevel% neq 0 (
     exit /b 1
 )
 
-:: Создание accounts.json
-if not exist "%PrismPath%\accounts.json" (
-    echo Создание файла accounts.json...
-    mkdir "%PrismPath%"
-    (
-    echo {"accounts":[{"entitlement":{"canPlayMinecraft":true,"ownsMinecraft":true},"msa-client-id":"","type":"MSA"},{"active":true,"entitlement":{"canPlayMinecraft":true,"ownsMinecraft":true},"profile":{"capes":[],"id":"1d759f9c422b34829ab32a40f2a083d3","name":"%username%","skin":{"id":"","url":"","variant":""}},"type":"Offline","ygg":{"extra":{"clientToken":"bf611e6cb4204f36ab913b577d222b95","userName":"%username%"},"iat":1729204961,"token":"0"}}],"formatVersion":3}
-    ) > "%PrismPath%\accounts.json"
-    echo Файл создан успешно.
+:: Создание файла accounts.json для автоматического входа с введенным именем пользователя
+echo Создание файла accounts.json...
+if not exist "%PrismPath%" mkdir "%PrismPath%"
+(
+echo {"accounts":[{"entitlement":{"canPlayMinecraft":true,"ownsMinecraft":true},"msa-client-id":"","type":"MSA"},{"active":true,"entitlement":{"canPlayMinecraft":true,"ownsMinecraft":true},"profile":{"capes":[],"id":"1d759f9c422b34829ab32a40f2a083d3","name":"%username%","skin":{"id":"","url":"","variant":""}},"type":"Offline","ygg":{"extra":{"clientToken":"bf611e6cb4204f36ab913b577d222b95","userName":"%username%"},"iat":1729204961,"token":"0"}}],"formatVersion":3}
+) > "%PrismPath%\accounts.json"
+
+:: Проверка наличия установленной Java
+java -version >nul 2>&1
+if %errorlevel% equ 0 (
+    echo Java уже установлена.
+    set "InstallJava=N"
 ) else (
-    echo Файл accounts.json уже существует. Продолжение установки...
+    set /p InstallJava="Java не обнаружена. Хотите установить JDK Axiom? (Д/Н): "
 )
 
-:: Проверка JDK Axiom
 set "JDKPath=%ProgramFiles%\Axiom\AxiomJDK-Pro-17\bin\javaw.exe"
 if not exist "%JDKPath%" (
-    echo JDK Axiom не установлен. Начало установки...
-
-    :: Загрузка JDK Axiom
-    if not exist "axiomjdk-jdk-pro17.0.13+12-windows-amd64.msi" (
+    if /i "%InstallJava%"=="Д" (
+        :: Загрузка JDK Axiom
         echo Загрузка JDK Axiom...
-        curl -L -o axiomjdk-jdk-pro17.0.13+12-windows-amd64.msi ^
-            "https://download.axiomjdk.ru/axiomjdk-pro/17.0.13+12/axiomjdk-jdk-pro17.0.13+12-windows-amd64.msi"
-    )
+        curl -L -o axiomjdk-jdk-pro17.0.13+12-windows-amd64.msi "https://download.axiomjdk.ru/axiomjdk-pro/17.0.13+12/axiomjdk-jdk-pro17.0.13+12-windows-amd64.msi"
 
-    :: Установка JDK Axiom
-    echo Установка JDK Axiom...
-    msiexec.exe /i "axiomjdk-jdk-pro17.0.13+12-windows-amd64.msi" /norestart > nul 2>&1
-    if %errorlevel% neq 0 (
-        echo Ошибка при установке JDK Axiom. Код ошибки: %errorlevel%
-        pause
-        exit /b 1
+        :: Установка JDK Axiom в директорию по умолчанию
+        echo Установка JDK Axiom...
+        msiexec.exe /i "axiomjdk-jdk-pro17.0.13+12-windows-amd64.msi" /norestart
+
+        :: Проверка установки JDK Axiom
+        if exist "%ProgramFiles%\Axiom\AxiomJDK-Pro-17\bin\javaw.exe" (
+            set "JavaPath=%ProgramFiles%\Axiom\AxiomJDK-Pro-17\bin\javaw.exe"
+            echo JDK Axiom успешно установлен.
+        ) else (
+            echo Ошибка: Установка JDK Axiom не удалась.
+            pause
+            exit /b 1
+        )
     )
 ) else (
     echo JDK Axiom уже установлен в системе.
@@ -69,7 +74,7 @@ if not exist "%PrismExePath%" (
             "https://github.com/PrismLauncher/PrismLauncher/releases/download/9.1/PrismLauncher-Windows-MSVC-Setup-9.1.exe"
     )
 
-    :: Установка Prism Launcher
+    :: Установка Prism Launcher в тихом режиме без автозапуска
     echo Установка Prism Launcher...
     start /wait PrismLauncher-Windows-MSVC-Setup-9.1.exe /SILENT /DIR="%LocalAppData%\Programs\PrismLauncher"
     if %errorlevel% neq 0 (
